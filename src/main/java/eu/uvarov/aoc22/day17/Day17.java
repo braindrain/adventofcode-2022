@@ -15,11 +15,25 @@ public class Day17 extends GenericDay {
     @Override
     public Object part1Solution() {
         Board tetris = new Board();
-        return tetris.play(inputString());
+        return tetris.play(inputString(), 2022, state -> false).highest;
     }
 
     @Override
     public Object part2Solution() {
-        return null;
+        Board tetris = new Board();
+        long numberOfRocks = 1000000000000L;
+        State firstPeriod = tetris.play(inputString(), numberOfRocks, s -> s.resetPeriod && s.rocksCount != 0);
+        State secondPeriod = tetris.play(inputString(), numberOfRocks, s -> s.resetPeriod && s.rocksCount > firstPeriod.rocksCount);
+
+
+        long rocksPerPeriod = secondPeriod.rocksCount - firstPeriod.rocksCount;
+        long numberOfPeriods = numberOfRocks / rocksPerPeriod;
+
+        long totalRocks = rocksPerPeriod * numberOfPeriods + firstPeriod.rocksCount;
+        long heightPerPeriod = secondPeriod.highest - firstPeriod.highest;
+        long totalHeight = heightPerPeriod * numberOfPeriods + firstPeriod.highest;
+        long delta = totalRocks - numberOfRocks;
+
+        return totalHeight - (firstPeriod.highest - tetris.play(inputString(), numberOfRocks, s -> s.rocksCount == firstPeriod.rocksCount - delta).highest);
     }
 }

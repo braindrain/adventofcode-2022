@@ -8,15 +8,14 @@ import eu.uvarov.aoc22.day17.types.RockType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 
 public class Board {
 
-    private static  int gridSizeX = 7;
-    private static  int gridSizeY = 0;
+    private static int gridSizeX = 7;
+    private static int gridSizeY = 0;
     private static Rock activeRock;
-
-    int highestRock = 0;
 
     //private boolean grid[][];
     private List<List<AtomicBoolean>> grid = new ArrayList<>();
@@ -46,7 +45,7 @@ public class Board {
         for (int i = 0; i < oldGrid.size(); i++) {
             for (int j = 0; j < oldGrid.get(0).size(); j++) {
                 if (oldGrid.get(i).get(j).get()) {
-                    grid.get(i).get(j+increaseY).set(true);
+                    grid.get(i).get(j + increaseY).set(true);
                 }
             }
         }
@@ -62,11 +61,11 @@ public class Board {
         return oldGrid;
     }
 
-    private void addNewPiece() {
+    private void addNewRock() {
         int xPos = 2;
         activeRock = RockBase
                 .getInstance(RockType.getType(countPiece++ % 5), xPos, 0, this);
-        int maxY = activeRock.getMaxY() +1;
+        int maxY = activeRock.getMaxY() + 1;
         int highestRock = getHighestRock();
         int resize = highestRock + maxY + 3;
 
@@ -85,7 +84,7 @@ public class Board {
     }
 
     public void update() {
-      /*  clearConsole();
+     /*   clearConsole();
         for (int i = 0; i < gridSizeY; i++) {
             System.out.print("|");
             for (int j = 0; j < gridSizeX; j++) {
@@ -109,32 +108,37 @@ public class Board {
         }
     }
 
-    public int play(String input) {
+    public State play(String input, long size, Predicate<State> exitCheck) {
         char[] chars = input.toCharArray();
-        int i = chars.length;
-        for (int j = 0; j < 2022; j++) {
-            addNewPiece();
-            update();
-            while (true) {
-                switch (chars[i++ % chars.length]) {
-                    case '<':
-                        movePiece(MoveType.LEFT);
-                        break;
-                    case '>':
-                        movePiece(MoveType.RIGHT);
-                        break;
-                }
-                if (activeRock.canMove(MoveType.DOWN)) {
-                    activeRock.clear();
-                    activeRock.performMove(MoveType.DOWN);
-                    activeRock.draw();
-                    update();
-                } else {
-                    break;
-                }
+        int rocksCount = 0;
+        addNewRock();
+        update();
+        rocksCount++;
+        for (int i = 0; rocksCount < size - 1; i++) {
+            if (i >= chars.length) i = 0;
+
+            State state = new State(getHighestRock(), rocksCount, i == 0);
+            if (exitCheck.test(state)) {
+                return state;
+            }
+
+            char c = chars[i];
+            switch (c) {
+                case '<' -> movePiece(MoveType.LEFT);
+                case '>' -> movePiece(MoveType.RIGHT);
+            }
+            if (activeRock.canMove(MoveType.DOWN)) {
+                activeRock.clear();
+                activeRock.performMove(MoveType.DOWN);
+                activeRock.draw();
+                update();
+            } else {
+                addNewRock();
+                update();
+                rocksCount++;
             }
         }
-        return getHighestRock();
+        return new State(getHighestRock(), size, false);
     }
 
     public int getHighestRock() {
